@@ -635,23 +635,23 @@ public class FindUnUsedAssetWindow : EditorWindow {
 		HashSet<string> beRefAssetFiles = new HashSet<string>();
 		HashSet<string> list = null;
 		string guid;
-		List<string> refRootAssetPaths = new List<string>();
-		bool isAllRefRootUnUsed = false;
+		HashSet<string> allRefAssetPaths = new HashSet<string>();
+		bool isAllRefUnUsed = false;
 
 		foreach (string assetName in codeFindUnUsedFiles) {
 			guid = AssetDatabase.AssetPathToGUID(assetName);
 			if (guid != null && refFindGuidDic.TryGetValue (guid, out list)) {
-				isAllRefRootUnUsed = true;
-				refRootAssetPaths.Clear();
-				GetAllRefRootAssets(assetName, refRootAssetPaths);
-				foreach (string assetName1 in refRootAssetPaths) {
+				isAllRefUnUsed = true;
+				allRefAssetPaths.Clear();
+				GetAllRefAssets(assetName, allRefAssetPaths);
+				foreach (string assetName1 in allRefAssetPaths) {
 					if(!codeFindUnUsedFileDic.ContainsKey(assetName1)){
-						isAllRefRootUnUsed = false;
+						isAllRefUnUsed = false;
 						break;
 					}
 				}
 
-				if(!isAllRefRootUnUsed){
+				if(!isAllRefUnUsed){
 					beRefAssetFiles.Add(assetName);
 				}
 			}
@@ -663,26 +663,19 @@ public class FindUnUsedAssetWindow : EditorWindow {
 				codeFindUnUsedFileDic.Remove(assetName);
 			}
 		}
-
 		codeFindUnUsedFilterFiles = null;
 		codeFindUnUsedFilterFiles = codeFindUnUsedFiles.ToArray();
 		Array.Sort<string>(codeFindUnUsedFilterFiles, StringComparer.OrdinalIgnoreCase);
 	}
 
-	void GetAllRefRootAssets(string assetPath, List<string> refRootAssetPaths){
+	void GetAllRefAssets(string assetPath, HashSet<string> refRootAssetPaths){
 		string guid = AssetDatabase.AssetPathToGUID(assetPath);
 
 		HashSet<string> list = null;
 		if (refFindGuidDic.TryGetValue (guid, out list)) {
-			if(refRootAssetPaths == null){
-				refRootAssetPaths = new List<string>();
-			}
 			foreach (string assetName in list) {
-				GetAllRefRootAssets(assetName, refRootAssetPaths);
-			}
-		} else {
-			if (refRootAssetPaths != null) {
-				refRootAssetPaths.Add (assetPath);
+				refRootAssetPaths.Add(assetName);
+				GetAllRefAssets(assetName, refRootAssetPaths);
 			}
 		}
 	}
@@ -703,7 +696,7 @@ public class FindUnUsedAssetWindow : EditorWindow {
 		GenerRefTreeNodeRecly(assetPath, null);
 	}
 
-	//递归生成正反向依赖assetPath对应资源的资源树节点
+	//递归生成反向依赖assetPath对应资源的资源树节点
 	void GenerRefTreeNodeRecly(string assetPath, TreeNode childNode){
 		if (string.IsNullOrEmpty (assetPath)) {
 			return;
@@ -723,7 +716,7 @@ public class FindUnUsedAssetWindow : EditorWindow {
 		string guid = AssetDatabase.AssetPathToGUID(assetPath);
 		if (refFindGuidDic.TryGetValue (guid, out list)) {
 			foreach (string assetName in list) {
-				//Debug.Log ("=============references path=" + assetName);
+				//Debugger.Log ("=============references path=" + assetName);
 				TreeNode parentNode = new TreeNode (null, AssetDatabase.LoadAssetAtPath (assetName, typeof(UnityEngine.Object)));
 				if (codeFindUnUsedFileDic != null && codeFindUnUsedFileDic.ContainsKey (assetName)) {
 					parentNode.SetSubTitle ("!", Color.red);
@@ -734,7 +727,7 @@ public class FindUnUsedAssetWindow : EditorWindow {
 					TreeNode childNodeClone = childNode.Clone();
 					parentNode.AddChild(childNodeClone);
 				}
-				
+
 				GenerRefTreeNodeRecly(assetName, parentNode);
 			}
 		} else {
@@ -743,7 +736,7 @@ public class FindUnUsedAssetWindow : EditorWindow {
 			}
 		}
 	}
-
+	
 	//生成assetPath对应资源正向依赖的资源树节点
 	void GenerDependTreeNodes(string assetPath, TreeNode parentNode){
 		if (string.IsNullOrEmpty (assetPath) || parentNode == null) {
