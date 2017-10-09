@@ -696,7 +696,7 @@ public class FindUnUsedAssetWindow : EditorWindow {
 		GenerRefTreeNodeRecly(assetPath, null);
 	}
 
-	//递归生成反向依赖assetPath对应资源的资源树节点
+	//递归生成正反向依赖assetPath对应资源的资源树节点
 	void GenerRefTreeNodeRecly(string assetPath, TreeNode childNode){
 		if (string.IsNullOrEmpty (assetPath)) {
 			return;
